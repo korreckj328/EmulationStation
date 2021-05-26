@@ -4,6 +4,7 @@
 #include "components/VideoPlayerComponent.h"
 #endif
 #include "components/VideoVlcComponent.h"
+#include "CollectionSystemManager.h"
 #include "utils/FileSystemUtil.h"
 #include "views/gamelist/IGameListView.h"
 #include "views/ViewController.h"
@@ -11,12 +12,14 @@
 #include "FileFilterIndex.h"
 #include "Log.h"
 #include "PowerSaver.h"
-#include "Renderer.h"
 #include "Sound.h"
 #include "SystemData.h"
 #include <unordered_map>
 #include <time.h>
+#include <chrono>
 #define FADE_TIME 			300
+
+static int lastIndex = 0;
 
 SystemScreenSaver::SystemScreenSaver(Window* window) :
 	mVideoScreensaver(NULL),
@@ -39,7 +42,7 @@ SystemScreenSaver::SystemScreenSaver(Window* window) :
 	if(!Utils::FileSystem::exists(path))
 		Utils::FileSystem::createDirectory(path);
 	srand((unsigned int)time(NULL));
-	mVideoChangeTime = 30000;
+	mSwapTimeout = 30000;
 }
 
 SystemScreenSaver::~SystemScreenSaver()
@@ -64,6 +67,13 @@ bool SystemScreenSaver::isScreenSaverActive()
 
 void SystemScreenSaver::startScreenSaver()
 {
+	// if set to index files in background, start thread
+	if (Settings::getInstance()->getBool("BackgroundIndexing"))
+	{
+		mExit = false;
+		mThread = new std::thread(&SystemScreenSaver::backgroundIndexing, this);
+	}
+
 	std::string screensaver_behavior = Settings::getInstance()->getString("ScreenSaverBehavior");
 	if (!mVideoScreensaver && (screensaver_behavior == "random video"))
 	{
@@ -71,7 +81,7 @@ void SystemScreenSaver::startScreenSaver()
 		mState =  PowerSaver::getMode() == PowerSaver::INSTANT
 					? STATE_SCREENSAVER_ACTIVE
 					: STATE_FADE_OUT_WINDOW;
-		mVideoChangeTime = Settings::getInstance()->getInt("ScreenSaverSwapVideoTimeout");
+		mSwapTimeout = Settings::getInstance()->getInt("ScreenSaverSwapVideoTimeout");
 		mOpacity = 0.0f;
 
 		// Load a random video
@@ -123,7 +133,7 @@ void SystemScreenSaver::startScreenSaver()
 		mState =  PowerSaver::getMode() == PowerSaver::INSTANT
 					? STATE_SCREENSAVER_ACTIVE
 					: STATE_FADE_OUT_WINDOW;
-		mVideoChangeTime = Settings::getInstance()->getInt("ScreenSaverSwapImageTimeout");
+		mSwapTimeout = Settings::getInstance()->getInt("ScreenSaverSwapImageTimeout");
 		mOpacity = 0.0f;
 
 		// Load a random image
@@ -198,6 +208,14 @@ void SystemScreenSaver::stopScreenSaver()
 	delete mImageScreensaver;
 	mImageScreensaver = NULL;
 
+	// Exit the indexing thread
+	if (Settings::getInstance()->getBool("BackgroundIndexing"))
+	{
+		mExit = true;
+		mThread->join();
+		delete mThread;
+	}
+
 	// we need this to loop through different videos
 	mState = STATE_INACTIVE;
 	PowerSaver::runningScreenSaver(false);
@@ -210,7 +228,7 @@ void SystemScreenSaver::renderScreenSaver()
 	{
 		// Render black background
 		Renderer::setMatrix(Transform4x4f::Identity());
-		Renderer::drawRect(0, 0, Renderer::getScreenWidth(), Renderer::getScreenHeight(), (unsigned char)(255));
+		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x000000FF, 0x000000FF);
 
 		// Only render the video if the state requires it
 		if ((int)mState >= STATE_FADE_IN_VIDEO)
@@ -223,9 +241,9 @@ void SystemScreenSaver::renderScreenSaver()
 	{
 		// Render black background
 		Renderer::setMatrix(Transform4x4f::Identity());
-		Renderer::drawRect(0, 0, Renderer::getScreenWidth(), Renderer::getScreenHeight(), (unsigned char)(255));
+		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x000000FF, 0x000000FF);
 
-		// Only render the video if the state requires it
+		// Only render the image if the state requires it
 		if ((int)mState >= STATE_FADE_IN_VIDEO)
 		{
 			if (mImageScreensaver->hasImage())
@@ -249,9 +267,31 @@ void SystemScreenSaver::renderScreenSaver()
 	else if (mState != STATE_INACTIVE)
 	{
 		Renderer::setMatrix(Transform4x4f::Identity());
-		unsigned char opacity = screensaver_behavior == "dim" ? 0xA0 : 0xFF;
-		Renderer::drawRect(0, 0, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x00000000 | opacity);
+		unsigned char color = screensaver_behavior == "dim" ? 0x000000A0 : 0x000000FF;
+		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), color, color);
 	}
+}
+
+void SystemScreenSaver::backgroundIndexing()
+{
+	LOG(LogDebug) << "Background indexing starting.";
+
+	// get the list of all games
+	SystemData* all = CollectionSystemManager::get()->getAllGamesCollection();
+	std::vector<FileData*> files = all->getRootFolder()->getFilesRecursive(GAME);
+	
+	const auto startTs = std::chrono::system_clock::now();
+	for (lastIndex; lastIndex < files.size(); lastIndex++)
+	{
+		if(mExit)
+			break;
+		Utils::FileSystem::exists(files.at(lastIndex)->getVideoPath());
+		Utils::FileSystem::exists(files.at(lastIndex)->getMarqueePath());
+		Utils::FileSystem::exists(files.at(lastIndex)->getThumbnailPath());
+		Utils::FileSystem::exists(files.at(lastIndex)->getImagePath());
+	}
+	auto endTs = std::chrono::system_clock::now();
+	LOG(LogDebug) << "Indexed a total of " << lastIndex << " entries in " << std::chrono::duration_cast<std::chrono::milliseconds>(endTs - startTs).count() << " ms. Stopping.";		
 }
 
 unsigned long SystemScreenSaver::countGameListNodes(const char *nodeName)
@@ -432,22 +472,22 @@ void SystemScreenSaver::update(int deltaTime)
 	}
 	else if (mState == STATE_SCREENSAVER_ACTIVE)
 	{
-		// Update the timer that swaps the videos
+		// Update the timer that swaps the videos/images
 		mTimer += deltaTime;
-		if (mTimer > mVideoChangeTime)
+		if (mTimer > mSwapTimeout)
 		{
-			nextVideo();
+			nextMediaItem();
 		}
 	}
 
-	// If we have a loaded video then update it
+	// If we have a loaded video/image then update it
 	if (mVideoScreensaver)
 		mVideoScreensaver->update(deltaTime);
-	if (mImageScreensaver)
+	else if (mImageScreensaver)
 		mImageScreensaver->update(deltaTime);
 }
 
-void SystemScreenSaver::nextVideo() {
+void SystemScreenSaver::nextMediaItem() {
 	mStopBackgroundAudio = false;
 	stopScreenSaver();
 	startScreenSaver();
@@ -467,9 +507,6 @@ void SystemScreenSaver::launchGame()
 		ViewController::get()->goToGameList(mCurrentGame->getSystem());
 		IGameListView* view = ViewController::get()->getGameListView(mCurrentGame->getSystem()).get();
 		view->setCursor(mCurrentGame);
-		if (Settings::getInstance()->getBool("ScreenSaverControls"))
-		{
-			view->launch(mCurrentGame);
-		}
+		view->launch(mCurrentGame);
 	}
 }

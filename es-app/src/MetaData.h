@@ -46,6 +46,11 @@ public:
 	void appendToXML(pugi::xml_node &parent, bool ignoreDefaults, const std::string &relativeTo) const;
 
 	MetaDataList(MetaDataListType type);
+<<<<<<< HEAD
+=======
+
+	void set(const std::string& key, const std::string& value);
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 
 	void set(const std::string &key, const std::string &value);
 
@@ -54,8 +59,6 @@ public:
 	int getInt(const std::string &key) const;
 
 	float getFloat(const std::string &key) const;
-
-	bool isDefault();
 
 	bool wasChanged() const;
 

@@ -65,7 +65,12 @@ int run_scraper_cmdline() {
 	std::string system_choice;
 	std::getline(std::cin, system_choice);
 
+<<<<<<< HEAD
 	if (system_choice == "y" || system_choice == "Y") {
+=======
+	if(system_choice == "y" || system_choice == "Y")
+	{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		out << "Will scrape all platforms.\n";
 		for (auto i = SystemData::sSystemVector.cbegin(); i != SystemData::sSystemVector.cend(); i++) {
 			out << "   " << (*i)->getName() << " (" << (*i)->getGameCount() << " games)\n";
@@ -90,7 +95,11 @@ int run_scraper_cmdline() {
 
 			std::getline(std::cin, sys_name);
 
+<<<<<<< HEAD
 			if (sys_name.empty())
+=======
+			if(sys_name.empty())
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 				break;
 
 			bool found = false;
@@ -203,7 +212,7 @@ int run_scraper_cmdline() {
 
 					int choice = -1;
 					std::string choice_str;
-					
+
 					out << "Your choice: ";
 
 					std::getline(std::cin, choice_str);

@@ -68,15 +68,21 @@ ResourceData ResourceManager::loadFile(const std::string& path) const
 	std::ifstream stream(path, std::ios::binary);
 
 	stream.seekg(0, stream.end);
-	size_t size = (size_t)stream.tellg();
+	std::ifstream::pos_type size = stream.tellg();
 	stream.seekg(0, stream.beg);
+	if(size>0)
+	{
+		//supply custom deleter to properly free array
+		std::shared_ptr<unsigned char> data(new unsigned char[size], array_deleter);
+		stream.read((char*)data.get(), size);
+		stream.close();
 
-	//supply custom deleter to properly free array
-	std::shared_ptr<unsigned char> data(new unsigned char[size], array_deleter);
-	stream.read((char*)data.get(), size);
-	stream.close();
+		ResourceData ret = {data, (size_t)size};
+		return ret;
+	}
 
-	ResourceData ret = {data, size};
+	//error reading file, return an "empty" ResourceData
+	ResourceData ret = {NULL, 0};
 	return ret;
 }
 
@@ -94,13 +100,15 @@ void ResourceManager::unloadAll()
 	auto iter = mReloadables.cbegin();
 	while(iter != mReloadables.cend())
 	{
-		if(!iter->expired())
+		std::shared_ptr<ReloadableInfo> info = *iter;
+
+		if (!info->data.expired())
 		{
-			iter->lock()->unload(sInstance);
+			info->reload = info->data.lock()->unload();
 			iter++;
-		}else{
-			iter = mReloadables.erase(iter);
 		}
+		else
+			iter = mReloadables.erase(iter);
 	}
 }
 
@@ -109,17 +117,27 @@ void ResourceManager::reloadAll()
 	auto iter = mReloadables.cbegin();
 	while(iter != mReloadables.cend())
 	{
-		if(!iter->expired())
+		std::shared_ptr<ReloadableInfo> info = *iter;
+
+		if (!info->data.expired())
 		{
-			iter->lock()->reload(sInstance);
+			if (info->reload)
+			{
+				info->data.lock()->reload();
+				info->reload = false;
+			}
+
 			iter++;
-		}else{
-			iter = mReloadables.erase(iter);
 		}
+		else
+			iter = mReloadables.erase(iter);
 	}
 }
 
 void ResourceManager::addReloadable(std::weak_ptr<IReloadable> reloadable)
 {
-	mReloadables.push_back(reloadable);
+	std::shared_ptr<ReloadableInfo> info = std::make_shared<ReloadableInfo>();
+	info->data = reloadable;
+	info->reload = false;
+	mReloadables.push_back(info);
 }

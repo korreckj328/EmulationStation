@@ -22,6 +22,8 @@ public:
 	virtual const char* getName() const override { return "video"; }
 	virtual void launch(FileData* game) override;
 
+	void onFocusLost(void) override;
+
 protected:
 	virtual void update(int deltaTime) override;
 
@@ -31,6 +33,7 @@ private:
 	void initMDLabels();
 	void initMDValues();
 
+	ImageComponent mThumbnail;
 	ImageComponent mMarquee;
 	VideoComponent* mVideo;
 	ImageComponent mImage;
