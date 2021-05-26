@@ -79,6 +79,11 @@ void GuiCollectionSystemsOptions::initializeMenu()
 	toggleSystemNameInCollections->setState(Settings::getInstance()->getBool("CollectionShowSystemInfo"));
 	mMenu.addWithLabel("SHOW SYSTEM NAME IN COLLECTIONS", toggleSystemNameInCollections);
 
+	// double press to remove from favorites
+	doublePressToRemoveFavs = std::make_shared<SwitchComponent>(mWindow);
+	doublePressToRemoveFavs->setState(Settings::getInstance()->getBool("DoublePressRemovesFromFavs"));
+	mMenu.addWithLabel("PRESS (Y) TWICE TO REMOVE FROM FAVS./COLL.", doublePressToRemoveFavs);
+
 	if(CollectionSystemManager::get()->isEditing())
 	{
 		row.elements.clear();
@@ -115,8 +120,8 @@ void GuiCollectionSystemsOptions::createCollection(std::string inName) {
 	std::string name = CollectionSystemManager::get()->getValidNewCollectionName(inName);
 	SystemData* newSys = CollectionSystemManager::get()->addNewCustomCollection(name);
 	customOptionList->add(name, name, true);
-	std::string outAuto = Utils::String::vectorToCommaString(autoOptionList->getSelectedObjects());
-	std::string outCustom = Utils::String::vectorToCommaString(customOptionList->getSelectedObjects());
+	std::string outAuto = Utils::String::vectorToDelimitedString(autoOptionList->getSelectedObjects(), ",");
+	std::string outCustom = Utils::String::vectorToDelimitedString(customOptionList->getSelectedObjects(), ",");
 	updateSettings(outAuto, outCustom);
 	ViewController::get()->goToSystemView(newSys);
 
@@ -166,9 +171,9 @@ void GuiCollectionSystemsOptions::addSystemsToMenu()
 
 void GuiCollectionSystemsOptions::applySettings()
 {
-	std::string outAuto = Utils::String::vectorToCommaString(autoOptionList->getSelectedObjects());
+	std::string outAuto = Utils::String::vectorToDelimitedString(autoOptionList->getSelectedObjects(), ",");
 	std::string prevAuto = Settings::getInstance()->getString("CollectionSystemsAuto");
-	std::string outCustom = Utils::String::vectorToCommaString(customOptionList->getSelectedObjects());
+	std::string outCustom = Utils::String::vectorToDelimitedString(customOptionList->getSelectedObjects(), ",");
 	std::string prevCustom = Settings::getInstance()->getString("CollectionSystemsCustom");
 	bool outSort = sortAllSystemsSwitch->getState();
 	bool prevSort = Settings::getInstance()->getBool("SortAllSystems");
@@ -176,7 +181,10 @@ void GuiCollectionSystemsOptions::applySettings()
 	bool prevBundle = Settings::getInstance()->getBool("UseCustomCollectionsSystem");
 	bool prevShow = Settings::getInstance()->getBool("CollectionShowSystemInfo");
 	bool outShow = toggleSystemNameInCollections->getState();
-	bool needUpdateSettings = prevAuto != outAuto || prevCustom != outCustom || outSort != prevSort || outBundle != prevBundle || prevShow != outShow ;
+	bool prevDblPressRmFavs = Settings::getInstance()->getBool("DoublePressRemovesFromFavs");
+	bool outDblPressRmFavs = doublePressToRemoveFavs->getState();
+	bool needUpdateSettings = prevAuto != outAuto || prevCustom != outCustom || outSort != prevSort || outBundle != prevBundle
+		|| prevShow != outShow || prevDblPressRmFavs != outDblPressRmFavs;
 	if (needUpdateSettings)
 	{
 		updateSettings(outAuto, outCustom);
@@ -192,6 +200,7 @@ void GuiCollectionSystemsOptions::updateSettings(std::string newAutoSettings, st
 	Settings::getInstance()->setBool("SortAllSystems", sortAllSystemsSwitch->getState());
 	Settings::getInstance()->setBool("UseCustomCollectionsSystem", bundleCustomCollections->getState());
 	Settings::getInstance()->setBool("CollectionShowSystemInfo", toggleSystemNameInCollections->getState());
+	Settings::getInstance()->setBool("DoublePressRemovesFromFavs", doublePressToRemoveFavs->getState());
 	Settings::getInstance()->saveFile();
 	CollectionSystemManager::get()->loadEnabledListFromSettings();
 	CollectionSystemManager::get()->updateSystemsList();

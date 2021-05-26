@@ -18,12 +18,16 @@ public:
 
 	virtual void launch(FileData* game) override;
 
+	void onFocusLost() override;
+
 private:
 	void updateInfoPanel();
 
 	void initMDLabels();
 	void initMDValues();
 
+	ImageComponent mThumbnail;
+	ImageComponent mMarquee;
 	ImageComponent mImage;
 
 	TextComponent mLblRating, mLblReleaseDate, mLblDeveloper, mLblPublisher, mLblGenre, mLblPlayers, mLblLastPlayed, mLblPlayCount;

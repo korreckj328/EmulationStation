@@ -72,10 +72,16 @@ protected:
 	std::vector<Entry> mEntries;
 
 public:
+<<<<<<< HEAD
 	IList(Window *window, const ScrollTierList &tierList = LIST_SCROLL_STYLE_QUICK,
 		  const ListLoopType &loopType = LIST_PAUSE_AT_END) : GuiComponent(window),
 															  mGradient(window), mTierList(tierList),
 															  mLoopType(loopType) {
+=======
+	IList(Window* window, const ScrollTierList& tierList = LIST_SCROLL_STYLE_QUICK, const ListLoopType& loopType = LIST_PAUSE_AT_END) : GuiComponent(window),
+		mGradient(window), mTierList(tierList), mLoopType(loopType)
+	{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		mCursor = 0;
 		mScrollTier = 0;
 		mScrollVelocity = 0;
@@ -93,7 +99,12 @@ public:
 		return (mScrollVelocity != 0 && mScrollTier > 0);
 	}
 
+<<<<<<< HEAD
 	int getScrollingVelocity() {
+=======
+	int getScrollingVelocity()
+	{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		return mScrollVelocity;
 	}
 

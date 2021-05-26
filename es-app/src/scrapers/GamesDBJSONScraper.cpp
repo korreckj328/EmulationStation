@@ -50,12 +50,14 @@ const std::map<PlatformId, std::string> gamesdb_new_platformid_map{
 	{ ATARI_XE, "30" },
 	{ COLECOVISION, "31" },
 	{ COMMODORE_64, "40" },
+	{ DAPHNE, "23" },
 	{ INTELLIVISION, "32" },
 	{ MAC_OS, "37" },
 	{ XBOX, "14" },
 	{ XBOX_360, "15" },
 	{ MSX, "4929" },
 	{ NEOGEO, "24" },
+	{ NEOGEO_CD, "4956" },
 	{ NEOGEO_POCKET, "4922" },
 	{ NEOGEO_POCKET_COLOR, "4923" },
 	{ NINTENDO_3DS, "4912" },
@@ -63,6 +65,7 @@ const std::map<PlatformId, std::string> gamesdb_new_platformid_map{
 	{ NINTENDO_DS, "8" },
 	{ FAMICOM_DISK_SYSTEM, "4936" },
 	{ NINTENDO_ENTERTAINMENT_SYSTEM, "7" },
+	{ NINTENDO_POKEMON_MINI, "4957" },
 	{ GAME_BOY, "4" },
 	{ GAME_BOY_ADVANCE, "5" },
 	{ GAME_BOY_COLOR, "41" },
@@ -70,7 +73,7 @@ const std::map<PlatformId, std::string> gamesdb_new_platformid_map{
 	{ NINTENDO_WII, "9" },
 	{ NINTENDO_WII_U, "38" },
 	{ NINTENDO_VIRTUAL_BOY, "4918" },
-	{ NINTENDO_GAME_AND_WATCH, "-1" },
+	{ NINTENDO_GAME_AND_WATCH, "4950" },
 	{ PC, "1" },
 	{ SEGA_32X, "33" },
 	{ SEGA_CD, "21" },
@@ -88,6 +91,10 @@ const std::map<PlatformId, std::string> gamesdb_new_platformid_map{
 	{ PLAYSTATION_VITA, "39" },
 	{ PLAYSTATION_PORTABLE, "13" },
 	{ SUPER_NINTENDO, "6" },
+	{ SHARP_X1, "4977" },
+	{ SHARP_X6800, "4931"},
+	{ NEC_PC_8801, "4933"},
+	{ NEC_PC_9801, "4934"},
 	{ TURBOGRAFX_16, "34" },   // HuCards only
 	{ TURBOGRAFX_CD, "4955" }, // CD-ROMs only
 	{ WONDERSWAN, "4925" },
@@ -103,7 +110,7 @@ void thegamesdb_generate_json_scraper_requests(const ScraperSearchParams& params
 	std::queue<std::unique_ptr<ScraperRequest>>& requests, std::vector<ScraperSearchResult>& results)
 {
 	resources.prepare();
-	std::string path = "https://api.thegamesdb.net";
+	std::string path = "https://api.thegamesdb.net/v1";
 	bool usingGameID = false;
 	const std::string apiKey = std::string("apikey=") + resources.getApiKey();
 	std::string cleanName = params.nameOverride;

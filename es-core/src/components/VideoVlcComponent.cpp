@@ -1,8 +1,10 @@
 #include "components/VideoVlcComponent.h"
 
+#include "renderers/Renderer.h"
 #include "resources/TextureResource.h"
 #include "utils/StringUtil.h"
 #include "PowerSaver.h"
+<<<<<<< HEAD
 #include "Renderer.h"
 
 #ifdef __APPLE__
@@ -10,6 +12,9 @@
 #include <vlc.h>
 
 #else
+=======
+#include "Settings.h"
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 #include <vlc/vlc.h>
 #endif
 
@@ -128,15 +133,23 @@ void VideoVlcComponent::resize() {
 	onSizeChanged();
 }
 
+<<<<<<< HEAD
 void VideoVlcComponent::render(const Transform4x4f &parentTrans) {
 	VideoComponent::render(parentTrans);
 	float x, y;
+=======
+void VideoVlcComponent::render(const Transform4x4f& parentTrans)
+{
+	if (!isVisible())
+		return;
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 
+	VideoComponent::render(parentTrans);
 	Transform4x4f trans = parentTrans * getTransform();
 	GuiComponent::renderChildren(trans);
-
 	Renderer::setMatrix(trans);
 
+<<<<<<< HEAD
 	if (mIsPlaying && mContext.valid) {
 		float tex_offs_x = 0.0f;
 		float tex_offs_y = 0.0f;
@@ -192,30 +205,32 @@ void VideoVlcComponent::render(const Transform4x4f &parentTrans) {
 			else
 				vertices[i / 4].colour[i % 4] = 1.0f;
 		}
+=======
+	if (mIsPlaying && mContext.valid)
+	{
+		const unsigned int fadeIn = (unsigned int)(Math::clamp(0.0f, mFadeIn, 1.0f) * 255.0f);
+		const unsigned int color  = Renderer::convertColor((fadeIn << 24) | (fadeIn << 16) | (fadeIn << 8) | 255);
+		Renderer::Vertex   vertices[4];
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 
-		glEnable(GL_TEXTURE_2D);
+		vertices[0] = { { 0.0f     , 0.0f      }, { 0.0f, 0.0f }, color };
+		vertices[1] = { { 0.0f     , mSize.y() }, { 0.0f, 1.0f }, color };
+		vertices[2] = { { mSize.x(), 0.0f      }, { 1.0f, 0.0f }, color };
+		vertices[3] = { { mSize.x(), mSize.y() }, { 1.0f, 1.0f }, color };
+
+		// round vertices
+		for(int i = 0; i < 4; ++i)
+			vertices[i].pos.round();
 
 		// Build a texture for the video frame
 		mTexture->initFromPixels((unsigned char *) mContext.surface->pixels, mContext.surface->w, mContext.surface->h);
 		mTexture->bind();
 
 		// Render it
-		glEnableClientState(GL_COLOR_ARRAY);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-		glColorPointer(4, GL_FLOAT, sizeof(Vertex), &vertices[0].colour);
-		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vertices[0].pos);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &vertices[0].tex);
-
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_COLOR_ARRAY);
-
-		glDisable(GL_TEXTURE_2D);
-	} else {
+		Renderer::drawTriangleStrips(&vertices[0], 4);
+	}
+	else
+	{
 		VideoComponent::renderSnapshot(parentTrans);
 	}
 }
@@ -261,8 +276,16 @@ void VideoVlcComponent::setupVLC(std::string subtitles) {
 void VideoVlcComponent::handleLooping() {
 	if (mIsPlaying && mMediaPlayer) {
 		libvlc_state_t state = libvlc_media_player_get_state(mMediaPlayer);
+<<<<<<< HEAD
 		if (state == libvlc_Ended) {
 			if (!Settings::getInstance()->getBool("VideoAudio")) {
+=======
+		if (state == libvlc_Ended)
+		{
+			if (!Settings::getInstance()->getBool("VideoAudio") ||
+				(Settings::getInstance()->getBool("ScreenSaverVideoMute") && mScreensaverMode))
+			{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 				libvlc_audio_set_mute(mMediaPlayer, 1);
 			}
 			//libvlc_media_player_set_position(mMediaPlayer, 0.0f);
@@ -305,6 +328,7 @@ void VideoVlcComponent::startVideo() {
 				libvlc_media_tracks_release(tracks, track_count);
 
 				// Make sure we found a valid video track
+<<<<<<< HEAD
 				if ((mVideoWidth > 0) && (mVideoHeight > 0)) {
 #ifndef _RPI_
 					if (mScreensaverMode) {
@@ -312,6 +336,26 @@ void VideoVlcComponent::startVideo() {
 
 							Vector2f resizeScale((Renderer::getScreenWidth() / (float) mVideoWidth),
 												 (Renderer::getScreenHeight() / (float) mVideoHeight));
+=======
+				if ((mVideoWidth > 0) && (mVideoHeight > 0))
+				{
+					if (mScreensaverMode)
+					{
+						std::string resolution = Settings::getInstance()->getString("VlcScreenSaverResolution");
+						if(resolution != "original") {
+							float scale = 1;			
+							if (resolution == "low")
+								// 25% of screen resolution
+								scale = 0.25;
+							if (resolution == "medium")
+								// 50% of screen resolution
+								scale = 0.5;
+							if (resolution == "high")
+								// 75% of screen resolution
+								scale = 0.75;
+
+							Vector2f resizeScale((Renderer::getScreenWidth() / (float)mVideoWidth) * scale, (Renderer::getScreenHeight() / (float)mVideoHeight) * scale);
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 
 							if (resizeScale.x() < resizeScale.y()) {
 								mVideoWidth = (unsigned int) (mVideoWidth * resizeScale.x());
@@ -322,14 +366,19 @@ void VideoVlcComponent::startVideo() {
 							}
 						}
 					}
-#endif
 					PowerSaver::pause();
 					setupContext();
 
 					// Setup the media player
 					mMediaPlayer = libvlc_media_player_new_from_media(mMedia);
 
+<<<<<<< HEAD
 					if (!Settings::getInstance()->getBool("VideoAudio")) {
+=======
+					if (!Settings::getInstance()->getBool("VideoAudio") ||
+						(Settings::getInstance()->getBool("ScreenSaverVideoMute") && mScreensaverMode))
+					{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 						libvlc_audio_set_mute(mMediaPlayer, 1);
 					}
 

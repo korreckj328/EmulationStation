@@ -210,6 +210,8 @@ void ViewController::launch(FileData *game, Vector3f center) {
 			game->launchGame(mWindow);
 			setAnimation(new LambdaAnimation(fadeFunc, 800), 0, [this] { mLockInput = false; }, true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
+			if (mCurrentView)
+				mCurrentView->onShow();
 		});
 	} else if (transition_style == "slide") {
 		// move camera to zoom in on center + fade out, launch game, come back in
@@ -219,6 +221,8 @@ void ViewController::launch(FileData *game, Vector3f center) {
 			setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 600), 0, [this] { mLockInput = false; },
 						 true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
+			if (mCurrentView)
+				mCurrentView->onShow();
 		});
 	} else { // instant
 		setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 10), 0, [this, origCamera, center, game] {
@@ -227,6 +231,8 @@ void ViewController::launch(FileData *game, Vector3f center) {
 			setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 10), 0, [this] { mLockInput = false; },
 						 true);
 			this->onFileChanged(game, FILE_METADATA_CHANGED);
+			if (mCurrentView)
+				mCurrentView->onShow();
 		});
 	}
 }
@@ -324,7 +330,12 @@ bool ViewController::input(InputConfig *config, Input input) {
 		return true;
 
 	// open menu
+<<<<<<< HEAD
 	if (!UIModeController::getInstance()->isUIModeKid() && config->isMappedTo("start", input) && input.value != 0) {
+=======
+	if(!(UIModeController::getInstance()->isUIModeKid() && Settings::getInstance()->getBool("DisableKidStartMenu")) && config->isMappedTo("start", input) && input.value != 0)
+	{
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		// open menu
 		mWindow->pushGui(new GuiMenu(mWindow));
 		return true;
@@ -381,6 +392,7 @@ void ViewController::render(const Transform4x4f &parentTrans) {
 		mWindow->renderHelpPromptsEarly();
 
 	// fade out
+<<<<<<< HEAD
 	if (mFadeOpacity) {
 		Renderer::setMatrix(parentTrans);
 		Renderer::drawRect(0, 0, Renderer::getScreenWidth(), Renderer::getScreenHeight(),
@@ -398,6 +410,31 @@ void ViewController::preload() {
 			sprintf(buffer, "Loading '%s' (%d/%d)",
 					(*it)->getFullName().c_str(), i, (int) SystemData::sSystemVector.size());
 			mWindow->renderLoadingScreen(std::string(buffer));
+=======
+	if(mFadeOpacity)
+	{
+		unsigned int fadeColor = 0x00000000 | (unsigned char)(mFadeOpacity * 255);
+		Renderer::setMatrix(parentTrans);
+		Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), fadeColor, fadeColor);
+	}
+}
+
+void ViewController::preload()
+{
+	int i = 1;
+	int max = SystemData::sSystemVector.size() + 1;
+
+	bool splash = Settings::getInstance()->getBool("SplashScreen") && Settings::getInstance()->getBool("SplashScreenProgress");
+	if (splash)
+		mWindow->renderLoadingScreen("Preloading UI", (float)i / (float)max);
+
+	for(auto it = SystemData::sSystemVector.cbegin(); it != SystemData::sSystemVector.cend(); it++)
+	{
+		if (splash)
+		{
+			i++;
+			mWindow->renderLoadingScreen("Preloading UI", (float)i / (float)max);
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		}
 
 		(*it)->getIndex()->resetFilters();
@@ -475,7 +512,11 @@ std::vector<HelpPrompt> ViewController::getHelpPrompts() {
 		return prompts;
 
 	prompts = mCurrentView->getHelpPrompts();
+<<<<<<< HEAD
 	if (!UIModeController::getInstance()->isUIModeKid())
+=======
+	if(!(UIModeController::getInstance()->isUIModeKid() && Settings::getInstance()->getBool("DisableKidStartMenu")))
+>>>>>>> 584f741b8eeac03ed96107fd234a07092b010755
 		prompts.push_back(HelpPrompt("start", "menu"));
 
 	return prompts;

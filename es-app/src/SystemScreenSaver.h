@@ -3,6 +3,7 @@
 #define ES_APP_SYSTEM_SCREEN_SAVER_H
 
 #include "Window.h"
+#include <thread>
 
 class ImageComponent;
 class Sound;
@@ -17,7 +18,7 @@ public:
 
 	virtual void startScreenSaver();
 	virtual void stopScreenSaver();
-	virtual void nextVideo();
+	virtual void nextMediaItem();
 	virtual void renderScreenSaver();
 	virtual bool allowSleep();
 	virtual void update(int deltaTime);
@@ -35,6 +36,8 @@ private:
 	void pickRandomVideo(std::string& path);
 	void pickRandomGameListImage(std::string& path);
 	void pickRandomCustomImage(std::string& path);
+
+	void backgroundIndexing();
 
 	void input(InputConfig* config, Input input);
 
@@ -55,13 +58,16 @@ private:
 	Window*			mWindow;
 	STATE			mState;
 	float			mOpacity;
-	int				mTimer;
+	int			mTimer;
 	FileData*		mCurrentGame;
 	std::string		mGameName;
 	std::string		mSystemName;
-	int 			mVideoChangeTime;
+	int 			mSwapTimeout;
 	std::shared_ptr<Sound>	mBackgroundAudio;
 	bool			mStopBackgroundAudio;
+
+	std::thread*				mThread;
+	bool 						mExit;
 };
 
 #endif // ES_APP_SYSTEM_SCREEN_SAVER_H
